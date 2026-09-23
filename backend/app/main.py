@@ -21,11 +21,18 @@ from app.llm_formatter import llm_formatter
 from app.metrics import Timer
 
 
+import asyncio
+import logging
+
+logger = logging.getLogger("main")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initializes and pre-loads the Moss index on application startup."""
+    """Initializes and pre-loads the Moss index on application startup without blocking server bind."""
     if moss_retriever.is_available():
-        await moss_retriever.ensure_index_loaded()
+        # Pre-warm index in background so server opens port immediately
+        asyncio.create_task(moss_retriever.ensure_index_loaded())
     yield
 
 
