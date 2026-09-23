@@ -18,12 +18,19 @@ Rules:
 
 class LLMFormatter:
     """
-    Strict formatting-only LLM wrapper.
+    Strict formatting-only LLM wrapper for the Hackathon Gemini Gateway (https://llm.hidevs.xyz/v1).
+    Accepts OpenAI-compatible chat completions requests with models like:
+      - gemini-3.5-flash-lite (default)
+      - gemini-3.5-flash
+      - gemini-3.6-flash
     Never invents new medical steps; operates strictly on approved text.
     """
 
     def __init__(self):
-        self.is_configured = bool(settings.ENABLE_LLM and settings.OPENAI_API_KEY)
+        self.api_key = settings.effective_llm_api_key
+        self.base_url = settings.LLM_BASE_URL.rstrip("/")
+        self.model = settings.LLM_MODEL
+        self.is_configured = bool(settings.ENABLE_LLM and self.api_key)
         self.client = None
         self._init_client()
 
@@ -31,14 +38,18 @@ class LLMFormatter:
         if not self.is_configured:
             return
         try:
-            from openai import OpenAI  # type: ignore
-            self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-            logger.info("OpenAI client initialized for formatting.")
-        except ImportError:
-            logger.warning("OpenAI SDK not installed. LLM formatting disabled.")
-            self.client = None
+            import httpx
+            self.client = httpx.Client(
+                base_url=self.base_url,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=4.0  # Strict timeout for emergency latency bounds
+            )
+            logger.info(f"Gemini LLM client initialized: base_url={self.base_url}, model={self.model}")
         except Exception as e:
-            logger.warning(f"Failed to initialize OpenAI client: {e}")
+            logger.warning(f"Failed to initialize LLM client: {e}")
             self.client = None
 
     def is_available(self) -> bool:
@@ -55,22 +66,33 @@ class LLMFormatter:
 
         start = time.perf_counter()
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
+            payload = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {
                         "role": "user",
                         "content": f"Language: {language}\n\nApproved source content:\n{approved_content}"
                     }
                 ],
-                temperature=0.0,
-                max_tokens=300,
-                timeout=3.0  # Strict timeout for emergency latency bounds
-            )
+                "temperature": 0.0,
+                "max_tokens": 300
+            }
+            response = self.client.post("/chat/completions", json=payload)
             elapsed_ms = (time.perf_counter() - start) * 1000.0
-            formatted_text = response.choices[0].message.content.strip()
-            return formatted_text or approved_content, round(elapsed_ms, 2)
+
+            if response.status_code == 200:
+                data = response.json()
+                choices = data.get("choices", [])
+                if choices and "message" in choices[0]:
+                    formatted_text = choices[0]["message"].get("content", "").strip()
+                    return formatted_text or approved_content, round(elapsed_ms, 2)
+            
+            logger.warning(
+                f"LLM API call returned status {response.status_code}: {response.text[:200]}. "
+                "Falling back to approved content."
+            )
+            return approved_content, round(elapsed_ms, 2)
         except Exception as e:
             elapsed_ms = (time.perf_counter() - start) * 1000.0
             logger.warning(f"LLM formatting failed or timed out: {e}. Falling back to raw approved content.")

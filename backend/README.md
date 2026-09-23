@@ -213,6 +213,12 @@ MOSS_PROJECT_ID=your_moss_project_id_here
 MOSS_PROJECT_KEY=your_moss_project_key_here
 MOSS_INDEX_NAME=golden-minute-emergency
 
+# Hackathon Gemini Gateway (https://llm.hidevs.xyz)
+LLM_BASE_URL=https://llm.hidevs.xyz/v1
+LLM_API_KEY=your_virtual_key_starting_with_sk
+LLM_MODEL=gemini-3.5-flash-lite
+ENABLE_LLM=true
+
 # Safety & Relevance Gating Thresholds
 RELEVANCE_THRESHOLD=0.30
 
