@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Activity, ShieldAlert, Sparkles, PhoneCall, RefreshCw } from "lucide-react";
+import {
+  Activity,
+  ShieldAlert,
+  Sparkles,
+  PhoneCall,
+  RefreshCw,
+  Zap,
+  Award,
+  Cpu,
+} from "lucide-react";
 import {
   fetchHealth,
   fetchStatus,
@@ -16,8 +25,15 @@ import { EmergencyInput } from "@/components/EmergencyInput";
 import { GuidanceCard } from "@/components/GuidanceCard";
 import { MetricsPanel } from "@/components/MetricsPanel";
 import { DebugPanel } from "@/components/DebugPanel";
+import { StorytellingHero } from "@/components/StorytellingHero";
+import { JudgeEvaluator } from "@/components/JudgeEvaluator";
+import { InteractivePipeline } from "@/components/InteractivePipeline";
+import { LatencyBenchmarker } from "@/components/LatencyBenchmarker";
+
+type ActiveTab = "copilot" | "judge" | "architecture";
 
 export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>("copilot");
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [systemStatus, setSystemStatus] = useState<StatusResponse | null>(null);
   const [response, setResponse] = useState<EmergencyResponse | null>(null);
@@ -26,6 +42,7 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const guidanceRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLDivElement>(null);
 
   const checkBackend = useCallback(async () => {
     try {
@@ -79,13 +96,17 @@ export default function HomePage() {
     }
   };
 
+  const handleRunJudgeScenario = (query: string, useMoss: boolean, useLlm: boolean) => {
+    handleEmergencySubmit(query, useMoss, useLlm);
+  };
+
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-zinc-100 flex flex-col justify-between">
+    <main className="min-h-screen bg-[#080C14] text-zinc-100 flex flex-col justify-between selection:bg-amber-500 selection:text-black">
       {/* Top Header */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <header className="border-b border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-zinc-950 font-black shadow-md shadow-amber-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-400 flex items-center justify-center text-zinc-950 font-black shadow-lg shadow-amber-500/20">
               <Activity className="w-5 h-5 text-zinc-950 stroke-[2.5]" />
             </div>
             <div>
@@ -93,17 +114,17 @@ export default function HomePage() {
                 <h1 className="text-base sm:text-lg font-black tracking-tight text-zinc-100">
                   GOLDEN MINUTE
                 </h1>
-                <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  Prototype • Safety-First
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-extrabold tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  Sub-10ms Copilot
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400 hidden sm:block">
-                Real-Time Voice Emergency Guidance Copilot
+                Real-Time Voice Emergency Guidance Powered by Moss
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <StatusBadge
               type="connection"
               value={isConnected ? "online" : "offline"}
@@ -118,41 +139,75 @@ export default function HomePage() {
             </button>
           </div>
         </div>
+
+        {/* Storytelling Navigation Switcher */}
+        <div className="border-t border-zinc-800/60 bg-zinc-950/40">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center gap-2 sm:gap-4 overflow-x-auto py-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("copilot")}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                activeTab === "copilot"
+                  ? "bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>⚡ Live Emergency Copilot</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("judge")}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                activeTab === "judge"
+                  ? "bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>🏆 Judges' Evaluation Bench (1-Click Stories)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("architecture")}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                activeTab === "architecture"
+                  ? "bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>🔬 Pipeline Architecture & Benchmark</span>
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 w-full flex-1">
-        {/* Hero Section */}
-        <section className="text-center space-y-3 pt-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            YC Fall 2026 × Moss Builder Sprint
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-zinc-100 max-w-2xl mx-auto leading-tight">
-            When every second matters,{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500">
-              find verified guidance faster.
-            </span>
-          </h2>
-          <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-            Describe an emergency using text or voice. The system retrieves approved information,
-            checks its safety, and provides a clear response.
-          </p>
-        </section>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 w-full flex-1">
+        {/* Storytelling Hero Section */}
+        <StorytellingHero
+          onQuickStart={() => {
+            setActiveTab("copilot");
+            inputRef.current?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
 
         {/* Persistent India 112 Emergency Banner */}
         <EmergencyReminder customReminder={response?.emergency_reminder} />
 
         {/* Offline Warning Notice if Backend is Down */}
         {!isConnected && (
-          <div className="bg-rose-950/50 border border-rose-600/40 rounded-xl p-4 flex items-start gap-3 text-rose-200 text-sm">
+          <div className="bg-rose-950/50 border border-rose-600/40 rounded-xl p-4 flex items-start gap-3 text-rose-200 text-sm shadow-xl">
             <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <strong className="font-semibold text-rose-300">
-                The guidance service is currently unavailable.
+                The guidance service is connecting to the cloud backend.
               </strong>
               <p className="text-xs text-rose-200/90 leading-relaxed">
-                If this is a real emergency, do not wait. Dial <strong>112</strong> immediately. Check if your backend server is running on port 8000.
+                If this is a real emergency, do not wait. Dial <strong>112</strong> immediately. The backend container may be warming up from standby.
               </p>
             </div>
           </div>
@@ -166,17 +221,57 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Emergency Situation Input Box */}
-        <EmergencyInput
-          onSubmit={handleEmergencySubmit}
-          isLoading={isLoading}
-          mossConfigured={systemStatus?.moss_configured ?? false}
-          llmConfigured={systemStatus?.llm_configured ?? false}
-        />
+        {/* TAB 1: LIVE EMERGENCY COPILOT */}
+        {activeTab === "copilot" && (
+          <div ref={inputRef} className="space-y-6">
+            <EmergencyInput
+              onSubmit={handleEmergencySubmit}
+              isLoading={isLoading}
+              mossConfigured={systemStatus?.moss_configured ?? false}
+              llmConfigured={systemStatus?.llm_configured ?? false}
+            />
 
-        {/* Guidance Result Card */}
+            {/* Live Interactive Pipeline Stage Tracker */}
+            <InteractivePipeline
+              isLoading={isLoading}
+              response={response}
+              metrics={response?.metrics ?? null}
+            />
+          </div>
+        )}
+
+        {/* TAB 2: JUDGES' EVALUATION BENCH */}
+        {activeTab === "judge" && (
+          <div className="space-y-6">
+            <JudgeEvaluator
+              onRunScenario={handleRunJudgeScenario}
+              isLoading={isLoading}
+            />
+
+            {/* Live Interactive Pipeline Stage Tracker */}
+            <InteractivePipeline
+              isLoading={isLoading}
+              response={response}
+              metrics={response?.metrics ?? null}
+            />
+          </div>
+        )}
+
+        {/* TAB 3: PIPELINE ARCHITECTURE & BENCHMARKS */}
+        {activeTab === "architecture" && (
+          <div className="space-y-6">
+            <InteractivePipeline
+              isLoading={isLoading}
+              response={response}
+              metrics={response?.metrics ?? null}
+            />
+            <LatencyBenchmarker metrics={response?.metrics ?? null} />
+          </div>
+        )}
+
+        {/* Guidance Result Card (Always visible once query is processed) */}
         {response && (
-          <section ref={guidanceRef} className="space-y-6 pt-2 scroll-mt-20">
+          <section ref={guidanceRef} className="space-y-6 pt-2 scroll-mt-24">
             <GuidanceCard
               data={response}
               submittedQuery={lastQuery}
@@ -189,6 +284,7 @@ export default function HomePage() {
               metrics={response.metrics}
               engine={response.retrieval_engine}
             />
+            <LatencyBenchmarker metrics={response.metrics} />
             <DebugPanel
               response={response}
               query={lastQuery}
@@ -201,15 +297,15 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/60 py-6 bg-zinc-950/40 text-center text-xs text-zinc-400">
+      <footer className="border-t border-zinc-800/60 py-6 bg-zinc-950/70 text-center text-xs text-zinc-400">
         <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© 2026 GOLDEN MINUTE — Safety-First Voice Emergency Copilot MVP</p>
+          <p>© 2026 GOLDEN MINUTE — Safety-First Voice Emergency Guidance Copilot</p>
           <div className="flex items-center gap-4 text-zinc-400">
-            <span>Powered by Moss Retrieval Pipeline</span>
+            <span>Powered by Moss In-Memory Retrieval</span>
             <span>•</span>
-            <a href="tel:112" className="text-amber-400 hover:underline inline-flex items-center gap-1">
+            <a href="tel:112" className="text-amber-400 hover:underline inline-flex items-center gap-1 font-semibold">
               <PhoneCall className="w-3 h-3" />
-              <span>India Helpline: 112</span>
+              <span>India Emergency: 112</span>
             </a>
           </div>
         </div>
