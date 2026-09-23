@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     # Relevance threshold for baseline retrieval (0.0 to 1.0)
     RELEVANCE_THRESHOLD: float = 0.15
 
+    # CORS Configuration
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,https://frontend-orpin-chi-47.vercel.app"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        if not self.CORS_ORIGINS:
+            return ["*"]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
     @property
     def effective_llm_api_key(self) -> str:
         return self.LLM_API_KEY or self.GEMINI_API_KEY or self.OPENAI_API_KEY

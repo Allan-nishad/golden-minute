@@ -23,3 +23,19 @@ def test_status_endpoint():
     assert "supported_categories" in data
     assert "choking" in data["supported_categories"]
     assert "bleeding" in data["supported_categories"]
+
+
+def test_cors_headers():
+    # Test preflight request from Vercel frontend domain
+    response = client.options(
+        "/api/v1/emergency",
+        headers={
+            "Origin": "https://frontend-orpin-chi-47.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        }
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "https://frontend-orpin-chi-47.vercel.app"
+    assert response.headers.get("access-control-allow-credentials") == "true"
+
